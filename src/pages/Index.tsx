@@ -24,6 +24,7 @@ const Index = () => {
       
       // If alarm is in the past AND light is not on, set it for tomorrow
       // Don't move to tomorrow if light is currently on (alarm is active)
+      // This ensures the current alarm keeps running past the time.
       if (alarm < now && !isLightOn) {
         alarm.setDate(alarm.getDate() + 1);
       }
@@ -38,14 +39,14 @@ const Index = () => {
       if (diffSeconds <= 0) {
         // Alarm has passed or is now - full brightness and ring alarm
         setIsAlarmRinging(true);
-        setIsLightOn(true);
+        setIsLightOn(true); // Keep light on
         return 100;
       } else if (diffSeconds > glowStartSeconds && !isLightOn) {
         // Too early - minimal brightness
         setIsAlarmRinging(false);
         return 5;
       } else if (isLightOn) {
-        // Keep light on after alarm until stopped
+        // Keep light on and alarm ringing until the STOP button is clicked
         return 100;
       } else {
         // Gradually increase brightness from 5% to 100%
@@ -72,20 +73,16 @@ const Index = () => {
     const hours = snoozeTime.getHours().toString().padStart(2, "0");
     const minutes = snoozeTime.getMinutes().toString().padStart(2, "0");
     setAlarmTime(`${hours}:${minutes}`);
-    setIsAlarmRinging(false);
+    setIsAlarmRinging(false); // Stop the sound
     setIsSnoozed(true);
-    setBrightness(5);
+    // isLightOn remains true until the new alarm starts, maintaining 100% brightness
   };
 
-  const handleDismiss = () => {
-    setIsAlarmRinging(false);
-    setBrightness(5);
-  };
-
+  // This is the STOP button functionality you requested: clear all alarm states.
   const handleStop = () => {
     setIsAlarmRinging(false);
     setIsLightOn(false);
-    setBrightness(5);
+    setBrightness(5); // Set to minimal brightness (off-state)
   };
 
   return (
@@ -134,9 +131,10 @@ const Index = () => {
         {/* Current Time */}
         <DigitalClock />
 
-        {/* Stop Button - Appears when alarm rings and stays until clicked */}
+        {/* Alarm Controls - Show when light is on (alarm is active/glowing at 100%) */}
         {isLightOn && (
-          <div className="animate-fade-in my-6">
+          <div className="animate-fade-in flex flex-col items-center gap-4 my-6">
+            {/* The main stop button that stays visible until clicked */}
             <Button
               onClick={handleStop}
               size="lg"
@@ -144,29 +142,19 @@ const Index = () => {
             >
               ⏹ STOP ALARM
             </Button>
-          </div>
-        )}
-
-        {/* Alarm Controls */}
-        {isAlarmRinging && (
-          <div className="animate-fade-in flex gap-4 my-4 bg-background/90 backdrop-blur-sm px-6 py-4 rounded-lg">
-            <Button
-              onClick={handleSnooze}
-              variant="outline"
-              size="lg"
-              className="bg-card/90 backdrop-blur-sm border-primary/30 hover:bg-primary/20"
-            >
-              <Bell className="w-4 h-4 mr-2" />
-              Snooze (5 min)
-            </Button>
-            <Button
-              onClick={handleDismiss}
-              variant="default"
-              size="lg"
-              className="bg-primary hover:bg-primary/90"
-            >
-              Dismiss Alarm
-            </Button>
+            
+            {/* Snooze button (only visible when the alarm is actively ringing/making noise) */}
+            {isAlarmRinging && (
+                <Button
+                  onClick={handleSnooze}
+                  variant="outline"
+                  size="lg"
+                  className="bg-card/90 backdrop-blur-sm border-primary/30 hover:bg-primary/20 mt-4"
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  Snooze (5 min)
+                </Button>
+            )}
           </div>
         )}
 
